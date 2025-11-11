@@ -4,19 +4,5 @@ output_dir: "output"  # Output directory
 
 # Turning off any of the properties by making it false
 properties:
-  name: true
-  roaster: true
-  roasting_date: true
-  open_date: true
-  note: true
-  aromatics: true
-  weight: true
-  cost: true
-  rating: true
-  favourite: true
-  finished: true
-  decaffeinated: true
-  roast: true
-  roast_range: true
-  bean_mix: true
+  include_retweets: false
   attachments: true  # Image handling

@@ -1,6 +1,7 @@
 import json
 import os
 import yaml
+import re
 from datetime import datetime
 
 # Load the configuration from config.yaml
@@ -19,24 +20,46 @@ os.makedirs(output_dir, exist_ok=True)
 def sanitize_filename(name):
     return "".join(c for c in name if c.isalnum() or c in " ._-").rstrip()
 
+# Function to strip html bits
+def strip_html(text):
+    return re.sub(r"<.*?>", "", text)
+
 # Function to format date
 def format_date(date_str):
     try:
-        date_obj = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+        date_obj = datetime.strptime(date_str,'%a %b %d %H:%M:%S +0000 %Y')
         return date_obj.strftime("%Y-%m-%d")
+    except ValueError:
+        return date_str
+
+# Function to format date time (this could be neater but, meh)
+def format_date_time(date_str):
+    try:
+        date_obj = datetime.strptime(date_str,'%a %b %d %H:%M:%S +0000 %Y')
+        return date_obj.strftime('%Y-%m-%d %H:%M:%S')
     except ValueError:
         return date_str
 
 # Function to generate daily note link based on a date string
 def generate_daily_note_link(date_str):
     date_obj = datetime.strptime(date_str, '%Y-%m-%d')
-    # date_obj = datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%S.%fZ')
+    #date_obj = datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%S.%fZ')
     year = date_obj.strftime('%Y')
     month_num = date_obj.strftime('%m')
     month_name = date_obj.strftime('%B')
     day_date = date_obj.strftime('%Y-%m-%d')
     day_name = date_obj.strftime('%A')
-    return f"/DailyNotes/{year}/{month_num}-{month_name}/{day_date}-{day_name}.md"
+    return f"/Dailies/{day_date}.md"
+
+def generate_tweet_date_file(id, created_date):
+    date_obj = datetime.strptime(created_date,'%a %b %d %H:%M:%S +0000 %Y')
+    year = date_obj.strftime('%Y')
+    month_num = date_obj.strftime('%m')
+    month_name = date_obj.strftime('%B')
+    day_date = date_obj.strftime('%Y-%m-%d')
+    day_name = date_obj.strftime('%A')
+    day = date_obj.strftime('%d')
+    return f"{year}/{month_num}/{day}/{id}.md"
 
 # Function to properly capitalise strings
 def format_string(s):
@@ -52,34 +75,35 @@ def create_markdown(tweet):
     content = []
     yaml_frontmatter = []
 
+    # Process the tweet content
+    content.append(f"> {tweet.get('full_text')}\n\n")
+
+    if properties.get('include_retweets', False) and tweet.get('retweeted', False):
+        return
+
+    # TODO: Fill out all retweet metadata
     # Process each property based on the configuration
-    if properties.get('retweeted', False):
-        name = tweet.get('retweeted', False)
-        yaml_frontmatter.append(f'retweeted: {retweeted}')
-        content.append(f"**Retweeted:** {format_bool(retweeted)}")
+    if tweet.get('retweeted', False):
+        yaml_frontmatter.append(f'retweeted: true')
 
-    if properties.get('in_reply_to_user_id', False):
+    if tweet.get('in_reply_to_user_id', False):
         reply_to_id = tweet.get('in_reply_to_user_id', 'Unknown user id')
-        reply_to_username = tweet.get('reply_to_screen_name', 'Unknown user name')
-        yaml_frontmatter.append(f'Replying to: "{reply_to_username}"')
-        content.append(f"**Replying to:** [{reply_to_username}]")
+        reply_to_username = tweet.get('in_reply_to_screen_name', 'Unknown user name')
+        yaml_frontmatter.append(f'replying to: "[[{reply_to_username}]]"')
+        yaml_frontmatter.append(f'replying to id: "[[{reply_to_id}]]"')
 
-    # if properties.get('roasting_date', False):
-    #     roasting_date = format_date(bean.get('roastingDate', ''))
-    #     if roasting_date != '':
-    #         yaml_frontmatter.append(f'roasting_date: "{roasting_date}"')
-    #         daily_note_link = generate_daily_note_link(roasting_date)
-    #         content.append(
-    #             f"**Roasting Date:** [{roasting_date}]({daily_note_link})")
-
-    # if properties.get('open_date', False):
-    #     open_date = format_date(bean.get('openDate', ''))
-    #     if open_date != '':
-    #         yaml_frontmatter.append(f'open_date: "{open_date}"')
-    #         daily_note_link = generate_daily_note_link(open_date)
-    #         content.append(
-    #             f"**Opening Date:** [{open_date}]({daily_note_link})")
-
+    created_date_time = format_date_time(tweet.get('created_at', ''))
+    created_date = format_date(tweet.get('created_at', ''))
+    if created_date_time != '':
+        yaml_frontmatter.append(f'date: "{created_date_time}"')
+        daily_note_link = generate_daily_note_link(created_date)
+        content.append(
+            f"Posted: [{created_date_time}]({daily_note_link})")
+    
+    yaml_frontmatter.append(f'favourite count: {tweet.get('favorite_count')}')
+    yaml_frontmatter.append(f'retweet count: {tweet.get('retweet_count')}')
+    yaml_frontmatter.append(f'source: {strip_html(tweet.get('source'))}')
+        
     # if properties.get('note', False):
     #     note = bean.get('note', 'No Notes')
     #     content.append(f"## Notes\n{note}")
@@ -140,12 +164,10 @@ def create_markdown(tweet):
     #         yaml_frontmatter.append(f'poster: "[[{image_path}]]"')
     #         content.append(f"![Bean Image]({image_path})\n\n")
 
-    # content.append("**Repeat purchases**\n\n")
-    # content.append("| Roasting Date | Weight| Cost|\n|---|---:|---:|\n")
-
+    
     # Combine YAML frontmatter and content
     yaml_section = "---\n" + \
-        "\n".join(yaml_frontmatter) + "\ntags:\n - Twitter\n---\n\n"
+        "\n".join(yaml_frontmatter) + "\ntags: \n- twitter\n---\n"
     markdown_content = yaml_section + "\n".join(content)
 
     return markdown_content
@@ -187,7 +209,7 @@ for tweet_array in data:
     tweet = tweet_array.get('tweet')
     print(f"Processing {tweet.get('id', 'Unknown tweet...?')}...")
     tweet_id = sanitize_filename(tweet.get('id', 'Unknown tweet'))
-    markdown_file = os.path.join(output_dir, f"{tweet_id}.md")
+    markdown_file = os.path.join(output_dir, f"{generate_tweet_date_file(tweet_id, tweet.get('created_at'))}")
 
     # if os.path.exists(markdown_file):
     #     print(f"Appending history to {tweet_id}.md...")
@@ -195,6 +217,7 @@ for tweet_array in data:
     # else:
     print(f"Creating {tweet_id}.md...")
     markdown_content = create_markdown(tweet)
+    os.makedirs(os.path.dirname(markdown_file), exist_ok=True)
 
     with open(markdown_file, 'w', encoding='utf-8') as md_file:
         md_file.write(markdown_content)
