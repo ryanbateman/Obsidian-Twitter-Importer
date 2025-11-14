@@ -99,28 +99,27 @@ def create_markdown(tweet):
         yaml_frontmatter.append(f'retweeted: true')
 
     if tweet.get('in_reply_to_user_id', False):
-        reply_to_id = tweet.get('in_reply_to_user_id', 'Unknown user id')
+        reply_to_user_id = tweet.get('in_reply_to_user_id', 'Unknown user id')
         reply_to_username = tweet.get('in_reply_to_screen_name', 'Unknown user name')
-        yaml_frontmatter.append(f'replying to: [[{reply_to_username}]]')
-        yaml_frontmatter.append(f'replying to tweet id: [[{reply_to_id}]]')
+        reply_to_tweet_id = tweet.get('in_reply_to_status_id_str', 'Unknown tweet id')
+        
+        yaml_frontmatter.append(f'replying to: "[[{reply_to_username}]]"')
+        yaml_frontmatter.append(f'replying to user id: "[[{reply_to_user_id}]]"')
+        yaml_frontmatter.append(f'replying to tweet id: "[[{reply_to_tweet_id}]]"')
         if (properties.get('create_user_files', False)):
             user_file = os.path.join(users_dir, f"{reply_to_username}.md")
             with open(user_file, 'a', encoding='utf-8') as md_file:
                 md_file.write(f'[[{tweet_id}.md]]\n')
     if len(user_mentions := deep_get(tweet, 'entities.user_mentions')) > 0:
         user_names_mentioned = [f"[[{user.get('screen_name')}]]" for user in user_mentions]
-        yaml_frontmatter.append(f'users mentioned: {", ".join(user_names_mentioned)}"')
+        yaml_frontmatter.append(f'users mentioned: "{", ".join(user_names_mentioned)}"')
         
-
-
-
     created_date_time = format_date_time(tweet.get('created_at', ''))
     created_date = format_date(tweet.get('created_at', ''))
     if created_date_time != '':
-        yaml_frontmatter.append(f'date: "{created_date_time}"')
-        daily_note_link = generate_daily_note_link(created_date)
+        yaml_frontmatter.append(f'date: {created_date}')
         content.append(
-            f"Posted: [{created_date_time}]({daily_note_link})")
+            f"Posted: {created_date_time}")
     
     yaml_frontmatter.append(f'favourite count: {tweet.get('favorite_count')}')
     yaml_frontmatter.append(f'retweet count: {tweet.get('retweet_count')}')
