@@ -1,8 +1,10 @@
-json_file: "example.js"  # JSON file path
+json_file: "twitter/data/tweet.js"  # JSON file path
+#json_file: "example.js"  # JSON file path
 output_dir: "output"  # Output directory
-
+users_dir: "output/users"  # Output directory
 
 # Turning off any of the properties by making it false
 properties:
   include_retweets: false
+  create_user_files: true
   attachments: true  # Image handling
