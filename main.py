@@ -52,17 +52,6 @@ def format_date_time(date_str):
     except ValueError:
         return date_str
 
-# Function to generate daily note link based on a date string
-def generate_daily_note_link(date_str):
-    date_obj = datetime.strptime(date_str, '%Y-%m-%d')
-    #date_obj = datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%S.%fZ')
-    year = date_obj.strftime('%Y')
-    month_num = date_obj.strftime('%m')
-    month_name = date_obj.strftime('%B')
-    day_date = date_obj.strftime('%Y-%m-%d')
-    day_name = date_obj.strftime('%A')
-    return f"/Dailies/{day_date}.md"
-
 def generate_tweet_date_file(id, created_date):
     date_obj = datetime.strptime(created_date,'%a %b %d %H:%M:%S +0000 %Y')
     year = date_obj.strftime('%Y')
@@ -171,11 +160,6 @@ for tweet_array in tqdm(data):
     tweet_id = sanitize_filename(tweet.get('id', 'Unknown tweet'))
     markdown_file = os.path.join(output_dir, f"{generate_tweet_date_file(tweet_id, tweet.get('created_at'))}")
 
-    # if os.path.exists(markdown_file):
-    #     print(f"Appending history to {tweet_id}.md...")
-    #     markdown_content = amend_markdown(markdown_file, tweet)
-    # else:
-    # print(f"Creating {tweet_id}.md...")
     markdown_content = create_markdown(tweet)
     os.makedirs(os.path.dirname(markdown_file), exist_ok=True)
 
