@@ -1,4 +1,3 @@
-#json_file: "twitter/data/tweet.js"  # JSON file path
 json_file: "example.js"  # Tweets JSON file path
 output_dir: "output"  # Output directory
 users_dir: "output/users"  # Output directory

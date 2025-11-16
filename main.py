@@ -100,8 +100,8 @@ def create_markdown(tweet):
             with open(user_file, 'a', encoding='utf-8') as md_file:
                 md_file.write(f'[[{tweet_id}.md]]\n')
     if len(user_mentions := deep_get(tweet, 'entities.user_mentions')) > 0:
-        user_names_mentioned = [f"[[{user.get('screen_name')}]]" for user in user_mentions]
-        yaml_frontmatter.append(f'users mentioned: "{" ".join(user_names_mentioned)}"')
+        user_names_mentioned = [f"\"[[{user.get('screen_name')}]]\"" for user in user_mentions]
+        yaml_frontmatter.append(f'users mentioned: [ {", ".join(user_names_mentioned)} ]')
         
     created_date_time = format_date_time(tweet.get('created_at', ''))
     created_date = format_date(tweet.get('created_at', ''))
