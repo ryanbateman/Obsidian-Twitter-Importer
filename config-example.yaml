@@ -1,9 +1,11 @@
 json_file: "example.js"  # Tweets JSON file path
+media_dir: "media" # The directory holding your media
 output_dir: "output"  # Output directory
 users_dir: "output/users"  # Output directory
 
 # Turning off any of the properties by making it false
 properties:
   include_retweets: false
+  include_media: true
   create_user_files: true
   attachments: true  # Image handling

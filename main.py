@@ -15,6 +15,7 @@ json_file = config['json_file']
 output_dir = config['output_dir']
 users_dir = config['users_dir']
 properties = config['properties']
+media_dir = config['media_dir']
 
 # Create the output directory if it doesn't exist
 os.makedirs(output_dir, exist_ok=True)
@@ -51,6 +52,11 @@ def format_date_time(date_str):
         return date_obj.strftime('%Y-%m-%d %H:%M:%S')
     except ValueError:
         return date_str
+
+def get_media_path(id, url):
+    media_file = url.rsplit('/', 1)[-1]
+    file_path = (media_dir + "/" +  id + "-" + media_file)
+    return file_path
 
 def generate_tweet_date_file(id, created_date):
     date_obj = datetime.strptime(created_date,'%a %b %d %H:%M:%S +0000 %Y')
@@ -99,10 +105,16 @@ def create_markdown(tweet):
             user_file = os.path.join(users_dir, f"{reply_to_username}.md")
             with open(user_file, 'a', encoding='utf-8') as md_file:
                 md_file.write(f'[[{tweet_id}.md]]\n')
+    
     if len(user_mentions := deep_get(tweet, 'entities.user_mentions')) > 0:
         user_names_mentioned = [f"\"[[{user.get('screen_name')}]]\"" for user in user_mentions]
         yaml_frontmatter.append(f'users mentioned: [ {", ".join(user_names_mentioned)} ]')
+
+    if properties.get('include_media') and ((media_entities := deep_get(tweet, 'entities.media')) is not None):
+        media_attached = [f"![{media.get('id_str')}][{get_media_path(tweet.get('id'), media.get('media_url'))}]  " for media in media_entities]
+        content.append(f'{"  \n".join(media_attached)}')
         
+
     created_date_time = format_date_time(tweet.get('created_at', ''))
     created_date = format_date(tweet.get('created_at', ''))
     if created_date_time != '':
@@ -151,7 +163,6 @@ with open(json_file, 'r', encoding='utf-8') as file:
     file_content = file.read()
     json_content = file_content.strip('window.YTD.tweets.part0 = ')
     data = json.loads(json_content)
-
 
 # Process each tweet and create a markdown file
 for tweet_array in tqdm(data):
